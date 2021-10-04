@@ -7,7 +7,7 @@ Authentication service api using express and mongo db.
 - Register user with name and password.
 - Hash passwords in the database using Bcrypt and salt.
 - Login with the same name and password.
-- Generate access token with expired time for authenticate users.
+- Generate access token with expired time for authenticated users.
 - Generate refresh tokens for getting new access tokens.
 
 ## Essential environment variables:
