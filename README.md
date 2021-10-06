@@ -21,7 +21,8 @@ Add .env file and add this variables:
 - ACCESS_TOKEN_SECRET=secret for access tokens.
 - REFRESH_TOKEN_SECRET=secret for refresh tokens.
 
-Add in ssl folder:
+Add ssl folder and inside:
 
 - certificate.pem
 - key.pem
+
