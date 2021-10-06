@@ -1,5 +1,7 @@
 require('dotEnv').config;
 const express = require('express');
+const https = require('https');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -9,6 +11,8 @@ const User = require('./models/users');
 
 const app = express();
 const port = 3000;
+const accessTokenTTL = '15m';
+const refreshTokenTTL = '7days';
 
 app.use(express.json());
 
@@ -31,7 +35,7 @@ app.get('/test', (req, res) => {
 app.get('/authTest', authenticateToken, (req, res) => {
 	res.json({
 		msg: 'you are authorized!',
-		name: body.name,
+		name: req.body.name,
 	});
 });
 
@@ -157,7 +161,7 @@ async function generateAccessToken(payload) {
 	try {
 		const token = process.env.ACCESS_TOKEN_SECRET;
 		return jwt.sign(payload, token, {
-			expiresIn: '15m',
+			expiresIn: accessTokenTTL,
 		});
 	} catch (error) {
 		console.log('Could not generate access token: ', error);
@@ -173,7 +177,9 @@ async function generateAccessToken(payload) {
 async function generateRefreshToken(payload) {
 	try {
 		const token = process.env.REFRESH_TOKEN_SECRET;
-		return jwt.sign(payload, token, { expiresIn: '7days' });
+		return jwt.sign(payload, token, {
+			expiresIn: refreshTokenTTL,
+		});
 	} catch (error) {
 		console.log('Could not generate access token: ', error);
 	}
@@ -200,5 +206,19 @@ function authenticateToken(req, res, next) {
 	);
 }
 
-app.listen(port);
+// app.listen(port);
+https
+	.createServer(
+		{
+			key: fs.readFileSync('ssl/key.pem'),
+			cert: fs.readFileSync('ssl/certificate.pem'),
+		},
+		app,
+	)
+	.listen(port, () => {
+		console.log(
+			'Server up and running over SSL in port: ' + port,
+		);
+	});
+
 module.exports = app;
