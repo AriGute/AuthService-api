@@ -2,7 +2,9 @@ require('dotEnv').config;
 const express = require('express');
 const https = require('https');
 const fs = require('fs');
+
 const mongoose = require('mongoose');
+
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
@@ -28,13 +30,13 @@ mongoose.connection
 // can be remove at any time
 app.get('/test', (req, res) => {
 	res.json({
-		msg: 'you are authorized!',
+		respond: 'Test run successfully',
 	});
 });
 
 app.get('/authTest', authenticateToken, (req, res) => {
 	res.json({
-		msg: 'you are authorized!',
+		respond: 'you are authorized!',
 		name: req.body.name,
 	});
 });
@@ -75,18 +77,38 @@ app.post('/register', async (req, res) => {
 	}
 });
 
+app.post('/deleteUser', authenticateToken, (req, res) => {
+	User.findOneAndDelete(
+		{
+			_id: mongoose.Types.ObjectId(req.user.uid),
+		},
+		(err, user) => {
+			if (user != null) {
+				res
+					.status(200)
+					.json({ respond: 'User was deleted.' });
+			} else {
+				res.status(500).json({
+					respond: 'Could not find user to delete',
+				});
+			}
+		},
+	);
+});
+
 app.post('/login', async (req, res) => {
 	try {
 		User.findOne(
 			{ name: req.body.name },
 			async (err, user) => {
-				if (user == null)
+				if (user == null) {
 					// Could not find user.
-					res
-						.status(400)
-						.send(
+					res.status(400).json({
+						respond:
 							'Could not find user with this credentials.',
-						);
+					});
+					return;
+				}
 				// Found user.
 				const authorized = await bcrypt.compare(
 					req.body.password,
@@ -116,10 +138,10 @@ app.post('/login', async (req, res) => {
 						refreshToken: refreshToken,
 					});
 				} else {
-					// user is not authorized.
+					// User is not authorized.
 					res
 						.status(400)
-						.json({ msg: 'User is NOT authorized!' });
+						.json({ respond: 'User is NOT authorized!' });
 				}
 			},
 		);
@@ -141,12 +163,14 @@ app.get('/token', (req, res) => {
 		process.env.REFRESH_TOKEN_SECRET,
 		async (err, user) => {
 			if (err) return res.sendStatus(403);
-			console.log(user);
 			const accessToken = await generateAccessToken({
 				uid: user.uid,
 				user: user.name,
 			});
-			res.json({ accessToken: accessToken });
+			res.json({
+				accessToken: accessToken,
+				respond: 'test',
+			});
 		},
 	);
 });
@@ -200,13 +224,27 @@ function authenticateToken(req, res, next) {
 		process.env.ACCESS_TOKEN_SECRET,
 		(err, user) => {
 			if (err) return res.sendStatus(403);
+			User.findOne(
+				{ _uid: user.uid, name: user.name },
+				(err, user) => {
+					if (user == null)
+						return res.status(403).json({
+							respond:
+								'Could not find the Token owner (user account was deleted?).',
+						});
+				},
+			);
 			req.user = user;
 			next();
 		},
 	);
 }
 
-// app.listen(port);
+function stop() {
+	console.log('Closing server');
+	server.close();
+}
+
 https
 	.createServer(
 		{
@@ -222,3 +260,4 @@ https
 	});
 
 module.exports = app;
+module.exports.stop = stop;

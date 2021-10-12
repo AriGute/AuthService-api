@@ -4,16 +4,20 @@ const chaiHttps = require('chai-http');
 const authService = require('../authService.js');
 
 describe('Authenticate service', function () {
+	after(() => {
+		console.log('Done testing');
+	});
+
 	chai.use(chaiHttps);
 	const testUser = {
-		name: 'test name16',
-		password: 'abc123',
+		name: 'unit test user name',
+		password: 'unit test password',
 	};
 
 	let accessToken;
 	let refreshToken;
 
-	it('Register service', function (done) {
+	it('Register service test', function (done) {
 		chai
 			.request(authService)
 			.post('/register')
@@ -21,14 +25,13 @@ describe('Authenticate service', function () {
 			.end((err, res) => {
 				res.should.have.status(201);
 				res.body.should.have.property('respond');
+				done();
 
 				console.log('status: ', res.status);
-
-				done();
 			});
 	});
 
-	it('Login service', function (done) {
+	it('Login service test', function (done) {
 		chai
 			.request(authService)
 			.post('/login')
@@ -40,45 +43,70 @@ describe('Authenticate service', function () {
 
 				accessToken = res.body.accessToken;
 				refreshToken = res.body.refreshToken;
+				done();
 
 				console.log('status: ', res.status);
 				console.log('access token :', accessToken);
 				console.log('refresh token :', refreshToken);
-				done();
 			});
 	});
 
 	it('Token authentication test', function (done) {
 		chai
 			.request(authService)
-			.post('/register')
+			.get('/authTest')
 			.set('Authorization', 'Bearer ' + accessToken)
-			.send(testUser)
 			.end((err, res) => {
 				res.body.should.have.property('respond');
-				console.log(res.body.respond);
+				done();
 
 				console.log('status: ', res.status);
-
-				done();
+				console.log(res.body.respond);
 			});
 	});
 
 	it('Get new access token with the refresh token', function (done) {
 		chai
 			.request(authService)
-			.post('/token')
+			.get('/token')
 			.send({ token: refreshToken })
 			.end((err, res) => {
 				res.body.should.have.property('accessToken');
 
-				console.log('status: ', res.status);
+				done();
 
+				console.log('status: ', res.status);
 				console.log(
 					'new access token: ',
 					res.body.accessToken,
 				);
-				done();
+			});
+	});
+
+	it('Delete user test', function (done) {
+		chai
+			.request(authService)
+			.post('/deleteUser')
+			.set('Authorization', 'Bearer ' + accessToken)
+			.end((err, res) => {
+				res.body.should.have.property('respond');
+				chai
+					.request(authService)
+					.post('/login')
+					.send(testUser)
+					.end((err, res) => {
+						res.should.not.have.status(200);
+						res.body.should.not.have.property(
+							'accessToken',
+						);
+						res.body.should.not.have.property(
+							'refreshToken',
+						);
+						done();
+					});
+
+				console.log('status: ', res.status);
+				console.log(res.body.respond);
 			});
 	});
 });
