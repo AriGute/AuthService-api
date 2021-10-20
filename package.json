@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"start": "nodemon authService.js",
+		"start": "nodemon server.js",
 		"test": "mocha --exit"
 	},
 	"author": "",

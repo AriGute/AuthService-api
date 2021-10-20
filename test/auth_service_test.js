@@ -1,7 +1,7 @@
 const chai = require('chai');
 var should = require('chai').should();
 const chaiHttps = require('chai-http');
-const authService = require('../authService.js');
+const authService = require('../server.js');
 
 describe('Authenticate service', function () {
 	after(() => {
@@ -20,7 +20,7 @@ describe('Authenticate service', function () {
 	it('Register service test', function (done) {
 		chai
 			.request(authService)
-			.post('/register')
+			.post('/auth/register')
 			.send(testUser)
 			.end((err, res) => {
 				res.should.have.status(201);
@@ -34,7 +34,7 @@ describe('Authenticate service', function () {
 	it('Login service test', function (done) {
 		chai
 			.request(authService)
-			.post('/login')
+			.post('/auth/login')
 			.send(testUser)
 			.end((err, res) => {
 				res.should.have.status(200);
@@ -54,7 +54,7 @@ describe('Authenticate service', function () {
 	it('Token authentication test', function (done) {
 		chai
 			.request(authService)
-			.get('/authTest')
+			.get('/auth/authTest')
 			.set('Authorization', 'Bearer ' + accessToken)
 			.end((err, res) => {
 				res.body.should.have.property('respond');
@@ -68,7 +68,7 @@ describe('Authenticate service', function () {
 	it('Get new access token with the refresh token', function (done) {
 		chai
 			.request(authService)
-			.get('/token')
+			.get('/auth/token')
 			.send({ token: refreshToken })
 			.end((err, res) => {
 				res.body.should.have.property('accessToken');
@@ -86,9 +86,10 @@ describe('Authenticate service', function () {
 	it('Delete user test', function (done) {
 		chai
 			.request(authService)
-			.post('/deleteUser')
+			.post('/auth/deleteUser')
 			.set('Authorization', 'Bearer ' + accessToken)
 			.end((err, res) => {
+				console.log(res.body);
 				res.body.should.have.property('respond');
 				chai
 					.request(authService)
